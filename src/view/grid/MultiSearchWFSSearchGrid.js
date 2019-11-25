@@ -441,29 +441,55 @@ Ext.define('BasiGX.view.grid.MultiSearchWFSSearchGrid', {
 
         Ext.each(featureTypes, function(ft) {
             Ext.each(ft.properties, function(prop) {
-                xml +=
-                    '<wfs:Query typeName="' + me.getCombo().getWfsPrefix() +
-                           ft.typeName + '">' +
-                     '<ogc:Filter>' +
-                      '<ogc:And>' +
-                       '<ogc:BBOX>' +
-                        '<gml:Envelope srsName="' + projection + '">' +
-                         '<gml:lowerCorner>' + bboxll + '</gml:lowerCorner>' +
-                         '<gml:upperCorner>' + bboxur + '</gml:upperCorner>' +
-                        '</gml:Envelope>' +
-                       '</ogc:BBOX>' +
-                       '<ogc:PropertyIsLike wildCard="*" singleChar="."' +
-                        ' escape="\\" matchCase="false">' +
-                        '<ogc:PropertyName>' +
-                         prop.name +
-                        '</ogc:PropertyName>' +
-                        '<ogc:Literal>' +
-                         '*' + me.searchTerm + '*' +
-                         '</ogc:Literal>' +
-                       '</ogc:PropertyIsLike>' +
-                      '</ogc:And>' +
-                     '</ogc:Filter>' +
-                   '</wfs:Query>';
+                var filter;
+
+                switch (prop.type) {
+                    case 'xsd:string':
+                        filter =
+                            '<ogc:PropertyIsLike wildCard="*" singleChar="."' +
+                            ' escape="\\" matchCase="false">' +
+                            '<ogc:PropertyName>' +
+                            prop.name +
+                            '</ogc:PropertyName>' +
+                            '<ogc:Literal>' +
+                            '*' + me.searchTerm + '*' +
+                            '</ogc:Literal>' +
+                            '</ogc:PropertyIsLike>';
+                        break;
+                    case 'xsd:number':
+                    case 'xsd:int':
+                        if (Ext.isNumeric(me.searchTerm)) {
+                            filter =
+                                '<ogc:PropertyIsEqualTo>' +
+                                '<ogc:PropertyName>' +
+                                prop.name +
+                                '</ogc:PropertyName>' +
+                                '<ogc:Literal>' +
+                                me.searchTerm +
+                                '</ogc:Literal>' +
+                                '</ogc:PropertyIsEqualTo>';
+                        }
+                        break;
+                    default:
+                        break;
+                }
+                if (filter) {
+                    xml +=
+                        '<wfs:Query typeName="' + me.getCombo().getWfsPrefix() +
+                        ft.typeName + '">' +
+                        '<ogc:Filter>' +
+                          '<ogc:And>' +
+                            '<ogc:BBOX>' +
+                              '<gml:Envelope srsName="' + projection + '">' +
+                              '<gml:lowerCorner>' + bboxll + '</gml:lowerCorner>' +
+                              '<gml:upperCorner>' + bboxur + '</gml:upperCorner>' +
+                              '</gml:Envelope>' +
+                            '</ogc:BBOX>' +
+                            filter +
+                          '</ogc:And>' +
+                        '</ogc:Filter>' +
+                        '</wfs:Query>';
+                }
             });
         });
 
